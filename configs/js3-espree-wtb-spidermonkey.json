@@ -6,6 +6,8 @@
   "higher_is_better": true,
   "command": [
     "run-jetstream",
+    "--shell-arg",
+    "--strict-benchmark-mode",
     "--iterations",
     "100",
     "--test",
@@ -33,6 +35,8 @@
     "profile": {
       "command": [
         "run-jetstream",
+        "--shell-arg",
+        "--strict-benchmark-mode",
         "--iterations",
         "100",
         "--test",
