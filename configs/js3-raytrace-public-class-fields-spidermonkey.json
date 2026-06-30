@@ -1,0 +1,44 @@
+{
+  "name": "jetstream3-raytrace-public-class-fields",
+  "suite": "jetstream3",
+  "description": "JetStream 3 raytrace-public-class-fields workload in the SpiderMonkey shell",
+  "unit": "score",
+  "higher_is_better": true,
+  "command": [
+    "run-jetstream",
+    "--iterations",
+    "100",
+    "--test",
+    "raytrace-public-class-fields"
+  ],
+  "browsers": [
+    "spidermonkey"
+  ],
+  "binary": {
+    "type": "arg",
+    "flag": "--spidermonkey"
+  },
+  "mozconfig": [
+    "ac_add_options --enable-release",
+    "ac_add_options --as-milestone=release",
+    "ac_add_options --enable-warnings-as-errors",
+    "ac_add_options --enable-clang-plugin",
+    "ac_add_options --enable-application=js",
+    "export RUSTFLAGS=\"-Dwarnings\"",
+    "mk_add_options MOZ_OBJDIR=@TOPSRCDIR@/obj-js"
+  ],
+  "optimize_built_binary": "obj-js/dist/bin/js",
+  "optimize_hints": "YOU MUST READ ~/src/firefox/js/src/doc/how-we-optimize.md and ~/src/firefox/js/src/doc/cacheir.md to understand JIT optimization.",
+  "modes": {
+    "profile": {
+      "command": [
+        "run-jetstream",
+        "--iterations",
+        "100",
+        "--test",
+        "raytrace-public-class-fields",
+        "--profile-shell"
+      ]
+    }
+  }
+}
