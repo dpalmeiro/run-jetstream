@@ -1,5 +1,6 @@
 {
   "name": "jetstream3-ai-astar",
+  "ci_test_suite": "jetstream3",
   "suite": "jetstream3",
   "description": "JetStream 3 ai-astar workload in the SpiderMonkey shell",
   "unit": "score",

@@ -1,5 +1,6 @@
 {
   "name": "jetstream3-regexp-octane",
+  "ci_test_suite": "jetstream3",
   "suite": "jetstream3",
   "description": "JetStream 3 regexp-octane workload in the SpiderMonkey shell",
   "unit": "score",

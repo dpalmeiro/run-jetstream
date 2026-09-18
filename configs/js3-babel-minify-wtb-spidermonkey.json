@@ -1,5 +1,6 @@
 {
   "name": "jetstream3-babel-minify-wtb",
+  "ci_test_suite": "jetstream3",
   "suite": "jetstream3",
   "description": "JetStream 3 babel-minify-wtb workload in the SpiderMonkey shell",
   "unit": "score",

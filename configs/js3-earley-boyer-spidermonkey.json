@@ -1,5 +1,6 @@
 {
   "name": "jetstream3-earley-boyer",
+  "ci_test_suite": "jetstream3",
   "suite": "jetstream3",
   "description": "JetStream 3 earley-boyer workload in the SpiderMonkey shell",
   "unit": "score",

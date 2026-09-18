@@ -1,5 +1,6 @@
 {
   "name": "jetstream3-proxy-vue",
+  "ci_test_suite": "jetstream3",
   "suite": "jetstream3",
   "description": "JetStream 3 proxy-vue workload in the SpiderMonkey shell",
   "unit": "score",

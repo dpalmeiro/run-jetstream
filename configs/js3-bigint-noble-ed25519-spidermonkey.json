@@ -1,5 +1,6 @@
 {
   "name": "jetstream3-bigint-noble-ed25519",
+  "ci_test_suite": "jetstream3",
   "suite": "jetstream3",
   "description": "JetStream 3 bigint-noble-ed25519 workload in the SpiderMonkey shell",
   "unit": "score",

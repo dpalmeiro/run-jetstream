@@ -1,5 +1,6 @@
 {
   "name": "jetstream3-navier-stokes",
+  "ci_test_suite": "jetstream3",
   "suite": "jetstream3",
   "description": "JetStream 3 navier-stokes workload in the SpiderMonkey shell",
   "unit": "score",

@@ -1,5 +1,6 @@
 {
   "name": "jetstream3-8bitbench-wasm",
+  "ci_test_suite": "jetstream3",
   "suite": "jetstream3",
   "description": "JetStream 3 8bitbench-wasm workload in the SpiderMonkey shell",
   "unit": "score",
