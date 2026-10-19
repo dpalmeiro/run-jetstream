@@ -36,7 +36,7 @@ function resolveShell(opts: {
 
 export function runCommand(): Command {
   return new Command('run')
-    .description('Run JetStream3 in a SpiderMonkey or V8 shell and output score as JSON')
+    .description('Run JetStream3 in a SpiderMonkey or V8 shell and output score and subtest breakdown as JSON')
     .option('--spidermonkey <path>', 'Path to SpiderMonkey js shell')
     .option('--v8 <path>', 'Path to V8 shell (d8/jsvu v8)')
     .option('--binary <path>', 'Path to JS shell binary (or JS_SHELL_BINARY env var)')
@@ -75,7 +75,7 @@ export function runCommand(): Command {
           timeoutMs,
           verbose: !!opts.verbose,
         });
-        console.log(JSON.stringify({ score: result.score }));
+        console.log(JSON.stringify({ score: result.score, breakdown: result.breakdown }));
       } catch (e) {
         console.error(JSON.stringify({ error: (e as Error).message }));
         exitCode = 1;

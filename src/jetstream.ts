@@ -23,8 +23,20 @@ export interface JetStreamRunOptions {
   verbose?: boolean;
 }
 
+export interface BenchmarkBreakdownEntry {
+  suite_id: string;
+  subtest_id: string;
+  label: string;
+  unit: string;
+  higher_is_better: boolean;
+  samples: number[];
+  mean: number;
+  stddev: number;
+}
+
 export interface JetStreamRunResult {
   score: number;
+  breakdown: BenchmarkBreakdownEntry[];
   stdout: string;
   stderr: string;
 }
@@ -87,29 +99,81 @@ function profilingEnv(shell: ShellName, perfDir: string | undefined): NodeJS.Pro
   };
 }
 
-export function extractScoreFromResults(stdout: string): number {
-  const json = extractLastJsonObject(stdout);
-  const payload = JSON.parse(json) as unknown;
-  const root = payload as {
-    'JetStream3.0'?: {
-      tests?: Record<string, {
-        metrics?: { Score?: { current?: number[] } };
-      }>;
-    };
+interface JetStreamPayload {
+  'JetStream3.0'?: {
+    tests?: Record<string, {
+      metrics?: { Score?: { current?: number[] } };
+      tests?: Record<string, { metrics?: { Time?: { current?: number[] } } }>;
+    }>;
   };
+}
 
-  const tests = root['JetStream3.0']?.tests;
+function parseTests(stdout: string): NonNullable<NonNullable<JetStreamPayload['JetStream3.0']>['tests']> {
+  const payload = JSON.parse(extractLastJsonObject(stdout)) as JetStreamPayload;
+  const tests = payload['JetStream3.0']?.tests;
   if (!tests) throw new Error('JetStream JSON payload missing JetStream3.0.tests');
+  return tests;
+}
 
-  const scores = Object.values(tests)
+function isPositiveNumber(value: unknown): value is number {
+  return typeof value === 'number' && Number.isFinite(value) && value > 0;
+}
+
+export function extractScoreFromResults(stdout: string): number {
+  const scores = Object.values(parseTests(stdout))
     .map((test) => test.metrics?.Score?.current?.[0])
-    .filter((score): score is number => typeof score === 'number' && Number.isFinite(score) && score > 0);
+    .filter(isPositiveNumber);
 
   if (scores.length === 0) throw new Error('JetStream JSON payload contains no scores');
 
   const logSum = scores.reduce((sum, score) => sum + Math.log(score), 0);
   const geomean = Math.exp(logSum / scores.length);
   return Math.round(geomean * 100) / 100;
+}
+
+function stableId(value: string): string {
+  return value.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+}
+
+function breakdownEntry(
+  suite: string,
+  subtestId: string,
+  label: string,
+  unit: string,
+  higherIsBetter: boolean,
+  value: number,
+): BenchmarkBreakdownEntry {
+  return {
+    suite_id: stableId(suite),
+    subtest_id: subtestId,
+    label,
+    unit,
+    higher_is_better: higherIsBetter,
+    samples: [value],
+    mean: value,
+    stddev: 0,
+  };
+}
+
+/**
+ * Each workload yields a `__total__` entry with its score plus one entry per
+ * sub-score (First, Worst, Average, Startup, ...) with its time in ms. JetStream
+ * reports a single aggregated value per metric, so every entry has one sample.
+ */
+export function extractBreakdownFromResults(stdout: string): BenchmarkBreakdownEntry[] {
+  return Object.entries(parseTests(stdout)).flatMap(([workload, test]) => {
+    const entries: BenchmarkBreakdownEntry[] = [];
+    const score = test.metrics?.Score?.current?.[0];
+    if (isPositiveNumber(score)) {
+      entries.push(breakdownEntry(workload, '__total__', workload, 'score', true, score));
+    }
+    for (const [name, sub] of Object.entries(test.tests ?? {})) {
+      const time = sub.metrics?.Time?.current?.[0];
+      if (!isPositiveNumber(time)) continue;
+      entries.push(breakdownEntry(workload, stableId(name), `${workload}/${name}`, 'ms', false, time));
+    }
+    return entries;
+  });
 }
 
 function extractLastJsonObject(stdout: string): string {
@@ -191,8 +255,10 @@ export async function runJetStream(opts: JetStreamRunOptions): Promise<JetStream
       timeoutMs: opts.timeoutMs ?? DEFAULT_TIMEOUT_MS,
     });
     let score: number;
+    let breakdown: BenchmarkBreakdownEntry[];
     try {
       score = extractScoreFromResults(stdout);
+      breakdown = extractBreakdownFromResults(stdout);
     } catch (e) {
       throw new Error(
         `${(e as Error).message}\n` +
@@ -204,6 +270,7 @@ export async function runJetStream(opts: JetStreamRunOptions): Promise<JetStream
       stdout,
       stderr,
       score,
+      breakdown,
     };
   } finally {
     if (profileDir) {

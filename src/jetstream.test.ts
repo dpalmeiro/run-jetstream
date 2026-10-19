@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   buildBenchmarkArgs,
   buildShellArgs,
+  extractBreakdownFromResults,
   extractScoreFromResults,
   profilingShellArgs,
 } from './jetstream.js';
@@ -79,5 +80,41 @@ describe('extractScoreFromResults', () => {
 
   it('throws when no JSON is present', () => {
     expect(() => extractScoreFromResults('Overall Score 100')).toThrow('No JSON');
+  });
+});
+
+describe('extractBreakdownFromResults', () => {
+  it('returns per-workload scores and per-subscore times', () => {
+    const stdout = JSON.stringify({
+      'JetStream3.0': {
+        metrics: { Score: ['Geometric'] },
+        tests: {
+          'proxy-mobx': {
+            metrics: { Score: { current: [125] }, Time: ['Geometric'] },
+            tests: {
+              First: { metrics: { Time: { current: [50] } } },
+              Worst: { metrics: { Time: { current: [40] } } },
+              Average: { metrics: { Time: { current: [30] } } },
+            },
+          },
+          'WSL': {
+            metrics: { Score: { current: [10] }, Time: ['Geometric'] },
+            tests: {
+              Stdlib: { metrics: { Time: { current: [500] } } },
+              MainRun: { metrics: { Time: { current: [null] } } },
+            },
+          },
+        },
+      },
+    });
+
+    expect(extractBreakdownFromResults(stdout)).toEqual([
+      { suite_id: 'proxy-mobx', subtest_id: '__total__', label: 'proxy-mobx', unit: 'score', higher_is_better: true, samples: [125], mean: 125, stddev: 0 },
+      { suite_id: 'proxy-mobx', subtest_id: 'first', label: 'proxy-mobx/First', unit: 'ms', higher_is_better: false, samples: [50], mean: 50, stddev: 0 },
+      { suite_id: 'proxy-mobx', subtest_id: 'worst', label: 'proxy-mobx/Worst', unit: 'ms', higher_is_better: false, samples: [40], mean: 40, stddev: 0 },
+      { suite_id: 'proxy-mobx', subtest_id: 'average', label: 'proxy-mobx/Average', unit: 'ms', higher_is_better: false, samples: [30], mean: 30, stddev: 0 },
+      { suite_id: 'wsl', subtest_id: '__total__', label: 'WSL', unit: 'score', higher_is_better: true, samples: [10], mean: 10, stddev: 0 },
+      { suite_id: 'wsl', subtest_id: 'stdlib', label: 'WSL/Stdlib', unit: 'ms', higher_is_better: false, samples: [500], mean: 500, stddev: 0 },
+    ]);
   });
 });
